@@ -63,6 +63,41 @@
     button.btn { padding: 12px 18px; font-size: 16px; }
   }
   #printMsg.okmsg { color: var(--ok); } #printMsg.errmsg { color: var(--err); }
+
+  /* Smartphone: ogni riga diventa una scheda, la scelta stampante va in cima */
+  @media (max-width: 900px) {
+    .grid { display: flex; flex-direction: column; gap: 12px; }
+    .stack { display: contents; }
+    .stack > * + * { margin-top: 0; }
+    #printerPanel { order: -1; }
+    .stack > .panel:not(#printerPanel) { order: 1; }
+  }
+  @media (max-width: 700px) {
+    .wrap { padding: 12px 10px 32px; }
+    table, tbody { display: block; }
+    thead { display: none; }
+    #rows tr { display: grid; grid-template-columns: 24px 1fr 1fr 78px;
+               grid-template-areas: "n code code clr" ". type price qty" ". state state state";
+               gap: 6px 8px; padding: 10px 6px; margin-bottom: 8px;
+               border: 1px solid var(--line); border-radius: 8px; }
+    #rows td { padding: 0; min-width: 0; width: auto; }
+    #rows tr.active { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+    #rows tr.active td { background: transparent; }
+    #rows td.n { grid-area: n; text-align: left; align-self: end; padding-bottom: 10px; }
+    #rows td.code { grid-area: code; }
+    #rows td.type { grid-area: type; }
+    #rows td.price { grid-area: price; }
+    #rows td.qty { grid-area: qty; }
+    #rows td.state { grid-area: state; }
+    #rows td:last-child { grid-area: clr; text-align: right; align-self: end; }
+    #rows td.code::before { content: "Codice EAN"; }
+    #rows td.type::before { content: "Tipo"; }
+    #rows td.price::before { content: "Prezzo EUR"; }
+    #rows td.qty::before { content: "Copie"; }
+    #rows td::before { display: block; font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+    .bar { gap: 8px; }
+    .summary { margin-left: 0; width: 100%; }
+  }
 </style>
 </head>
 <body>
