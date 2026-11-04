@@ -1,0 +1,467 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Etichette EAN - Zebra ZD230t</title>
+<style>
+  :root {
+    --bg: #f6f6f4; --panel: #ffffff; --ink: #1c1c1a; --muted: #6a6a64;
+    --line: #dcdcd6; --accent: #1f5fbf; --accent-ink: #ffffff;
+    --ok: #1d7a3a; --err: #b3261e; --warn: #8a5a00;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #151515; --panel: #1f1f1e; --ink: #ececea; --muted: #9a9a94;
+      --line: #34342f; --accent: #6ea0ff; --accent-ink: #0b1220;
+      --ok: #5fd08a; --err: #ff8a80; --warn: #e6b450;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 20px 16px 40px; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 18px; }
+  .grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); gap: 16px; align-items: start; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+  .panel h2 { font-size: 14px; margin: 0 0 10px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-size: 12px; color: var(--muted); font-weight: 600; padding: 0 6px 6px; }
+  td { padding: 3px 6px; vertical-align: middle; }
+  td.n { color: var(--muted); width: 28px; text-align: right; }
+  tr.active td { background: color-mix(in srgb, var(--accent) 8%, transparent); }
+  input, select, textarea, button { font: inherit; color: var(--ink); }
+  input, select { width: 100%; padding: 7px 8px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; }
+  input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  input.bad { border-color: var(--err); }
+  td.type { width: 132px; } td.code { width: 34%; } td.price { width: 96px; } td.qty { width: 78px; }
+  td.state { font-size: 12.5px; min-width: 150px; }
+  .ok { color: var(--ok); } .err { color: var(--err); } .muted { color: var(--muted); }
+  .clear { background: none; border: none; color: var(--muted); cursor: pointer; padding: 4px 6px; border-radius: 4px; }
+  .clear:hover { color: var(--err); }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; align-items: center; }
+  button.btn { padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel); cursor: pointer; }
+  button.btn:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  .summary { margin-left: auto; color: var(--muted); font-size: 13px; }
+  .preview { display: flex; justify-content: center; padding: 6px 0 2px; }
+  .preview svg { width: 100%; max-width: 300px; height: auto; background: #fff; border: 1px dashed #9aa; }
+  .note { font-size: 12.5px; color: var(--muted); margin: 8px 0 0; }
+  .set { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; }
+  .set label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 2px; }
+  details { margin-top: 12px; }
+  summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+  textarea { width: 100%; height: 190px; margin-top: 8px; font: 12px/1.35 ui-monospace, Consolas, monospace;
+             background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 8px; }
+  .stack > * + * { margin-top: 16px; }
+  [hidden] { display: none !important; }
+  @media (pointer: coarse) {
+    input, select { padding: 11px 10px; font-size: 17px; }
+    button.btn { padding: 12px 18px; font-size: 16px; }
+  }
+  #printMsg.okmsg { color: var(--ok); } #printMsg.errmsg { color: var(--err); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Etichette EAN - Zebra ZD230t</h1>
+  <p class="sub">Etichetta 54 x 54 mm, 203 dpi. Inserisci le righe, controlla l'anteprima e stampa.</p>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>Righe da stampare</h2>
+      <table>
+        <thead><tr><th></th><th>Tipo</th><th>Codice EAN</th><th>Prezzo (EUR)</th><th>Copie</th><th>Stato</th><th></th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <div class="bar">
+        <button class="btn" id="add">+ 5 righe</button>
+        <button class="btn" id="example">Carica esempio</button>
+        <button class="btn" id="clearAll">Svuota</button>
+        <span class="summary" id="summary"></span>
+      </div>
+      <div class="bar">
+        <button class="btn primary app-only" id="printBtn" disabled hidden>Stampa</button>
+        <button class="btn primary web-only" id="download" disabled>Scarica file ZPL</button>
+        <button class="btn web-only" id="copy" disabled>Copia ZPL</button>
+        <span class="muted" id="copied"></span>
+        <span class="muted" id="printMsg"></span>
+      </div>
+      <p class="note">Il codice si può inserire con o senza cifra di controllo (7 o 8 cifre per EAN-8, 12 o 13 per EAN-13): se manca la calcola la pagina, se c'è la verifica. Una riga con errori blocca la stampa.</p>
+    </div>
+
+    <div class="stack">
+      <div class="panel app-only" id="printerPanel" hidden>
+        <h2>Stampante Bluetooth</h2>
+        <select id="printerSel" aria-label="Stampante"></select>
+        <div class="bar"><button class="btn" id="refreshPrinters">Aggiorna elenco</button></div>
+        <p class="note" id="printerMsg"></p>
+      </div>
+      <div class="panel">
+        <h2>Anteprima (riga selezionata)</h2>
+        <div class="preview" id="preview"></div>
+        <p class="note">Anteprima indicativa. Font e simbolo € reali li decide la stampante.</p>
+      </div>
+
+      <div class="panel">
+        <h2>Impostazioni</h2>
+        <div class="set">
+          <div><label for="sW">Larghezza etichetta (mm)</label><input id="sW" type="number" value="54" min="25" max="104"></div>
+          <div><label for="sH">Altezza etichetta (mm)</label><input id="sH" type="number" value="54" min="25" max="200"></div>
+          <div><label for="sM8">Modulo EAN-8 (punti)</label><input id="sM8" type="number" value="3" min="1" max="6"></div>
+          <div><label for="sM13">Modulo EAN-13 (punti)</label><input id="sM13" type="number" value="3" min="1" max="6"></div>
+          <div><label for="sBH">Altezza barre (punti)</label><input id="sBH" type="number" value="150" min="40" max="300"></div>
+          <div><label for="sPS">Corpo prezzo (punti)</label><input id="sPS" type="number" value="56" min="20" max="120"></div>
+          <div><label for="sSep">Separatore decimale stampato</label>
+            <select id="sSep"><option value=".">punto (7.75)</option><option value=",">virgola (7,75)</option></select></div>
+        </div>
+        <p class="note">203 dpi = 8 punti per mm. 54 mm = 432 punti.</p>
+        <details>
+          <summary>Mostra il ZPL generato</summary>
+          <textarea id="zplOut" readonly spellcheck="false"></textarea>
+        </details>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/*CORE-START*/
+const Core = (() => {
+  const L = ['0001101','0011001','0010011','0111101','0100011','0110001','0101111','0111011','0110111','0001011'];
+  const R = L.map(p => [...p].map(b => b === '1' ? '0' : '1').join(''));
+  const G = R.map(p => [...p].reverse().join(''));
+  const PAR = ['LLLLLL','LLGLGG','LLGGLG','LLGGGL','LGLLGG','LGGLLG','LGGGLL','LGLGLG','LGLGGL','LGGLGL'];
+
+  function check(d, type) {
+    let s = 0;
+    if (type === 8) { for (let i = 0; i < 7; i++) s += (+d[i]) * (i % 2 === 0 ? 3 : 1); }
+    else { for (let i = 0; i < 12; i++) s += (+d[i]) * (i % 2 === 0 ? 1 : 3); }
+    return (10 - (s % 10)) % 10;
+  }
+
+  function parseCode(raw, type) {
+    const d = String(raw).replace(/\s+/g, '');
+    if (!d) return { ok: false, msg: 'Codice mancante' };
+    if (!/^\d+$/.test(d)) return { ok: false, msg: 'Solo cifre' };
+    const n = type === 8 ? 8 : 13;
+    if (d.length === n - 1) return { ok: true, full: d + check(d, type), added: true };
+    if (d.length === n) {
+      const c = check(d.slice(0, n - 1), type);
+      if (c !== +d[n - 1]) return { ok: false, msg: 'Cifra di controllo errata (attesa ' + c + ')' };
+      return { ok: true, full: d, added: false };
+    }
+    return { ok: false, msg: 'Servono ' + (n - 1) + ' o ' + n + ' cifre (hai ' + d.length + ')' };
+  }
+
+  function parsePrice(raw) {
+    const s = String(raw).trim().replace(',', '.');
+    if (!s) return { ok: false, msg: 'Prezzo mancante' };
+    if (!/^\d{1,4}(\.\d{1,2})?$/.test(s)) return { ok: false, msg: 'Prezzo non valido (es. 7.75)' };
+    const v = Number(s);
+    if (v <= 0) return { ok: false, msg: 'Prezzo a zero' };
+    return { ok: true, text: v.toFixed(2) };
+  }
+
+  function parseQty(raw) {
+    const s = String(raw).trim();
+    if (!/^\d+$/.test(s)) return { ok: false, msg: 'Copie non valide' };
+    const q = Number(s);
+    if (q < 1 || q > 999) return { ok: false, msg: 'Copie da 1 a 999' };
+    return { ok: true, qty: q };
+  }
+
+  function bits(full, type) {
+    if (type === 8) {
+      let b = '101';
+      for (let i = 0; i < 4; i++) b += L[+full[i]];
+      b += '01010';
+      for (let i = 4; i < 8; i++) b += R[+full[i]];
+      return b + '101';
+    }
+    const par = PAR[+full[0]];
+    let b = '101';
+    for (let i = 0; i < 6; i++) b += (par[i] === 'L' ? L : G)[+full[i + 1]];
+    b += '01010';
+    for (let i = 7; i < 13; i++) b += R[+full[i]];
+    return b + '101';
+  }
+
+  function group(full, type) {
+    return type === 8 ? full.slice(0, 4) + ' ' + full.slice(4)
+                      : full[0] + ' ' + full.slice(1, 7) + ' ' + full.slice(7);
+  }
+
+  // Layout in punti stampante (203 dpi). Usato sia per il ZPL sia per l'anteprima.
+  function layout(type, s) {
+    const w = Math.round(s.wmm * 8), h = Math.round(s.hmm * 8);
+    const mw = type === 8 ? s.m8 : s.m13;
+    const barW = (type === 8 ? 67 : 95) * mw;
+    const ds = 30, gap1 = 14, gap2 = 22, ps = s.ps, bh = s.bh;
+    const total = bh + gap1 + ds + gap2 + ps;
+    const y0 = Math.max(0, Math.round((h - total) / 2));
+    const x = Math.round((w - barW) / 2);
+    const priceX = 16, priceW = Math.max(40, x + barW - priceX);   // si allarga a sinistra, resta allineato a destra con le barre
+    return { w, h, mw, barW, bh, ds, ps, x, y0, priceX, priceW,
+             yDigits: y0 + bh + gap1, yPrice: y0 + bh + gap1 + ds + gap2,
+             fits: barW <= w && total <= h };
+  }
+
+  function zplLabel(r, s) {
+    const t = layout(r.type, s);
+    if (!t.fits) throw new Error('Il codice non entra nell\'etichetta: riduci modulo, barre o corpo prezzo');
+    const payload = r.full.slice(0, r.type === 8 ? 7 : 12);   // la cifra di controllo la calcola la stampante
+    const cmd = r.type === 8 ? '^B8' : '^BE';
+    const price = (s.sep === ',' ? r.price.replace('.', ',') : r.price);
+    return [
+      '^XA',
+      '^CI28',
+      '^PW' + t.w,
+      '^LL' + t.h,
+      '^LH0,0',
+      '^BY' + t.mw + ',3,' + t.bh,
+      '^FO' + t.x + ',' + t.y0 + cmd + 'N,' + t.bh + ',N,N^FD' + payload + '^FS',
+      '^FO' + t.x + ',' + t.yDigits + '^A0N,' + t.ds + ',' + t.ds + '^FB' + t.barW + ',1,0,C^FD' + group(r.full, r.type) + '^FS',
+      '^FO' + t.priceX + ',' + t.yPrice + '^A0N,' + t.ps + ',' + t.ps + '^FB' + t.priceW + ',1,0,R^FH\\^FD\\E2\\82\\AC' + price + '^FS',
+      '^PQ' + r.qty + ',0,1,N',
+      '^XZ'
+    ].join('\n');
+  }
+
+  return { check, parseCode, parsePrice, parseQty, bits, group, layout, zplLabel };
+})();
+/*CORE-END*/
+
+/* ---------- Interfaccia ---------- */
+const $ = id => document.getElementById(id);
+const rowsEl = $('rows');
+let activeRow = null;
+const HAS_APP = typeof window.AndroidPrinter !== 'undefined';
+let lastLabels = 0, armed = false, armTimer = null, printing = false;
+
+function disarm() {
+  armed = false;
+  if (armTimer) { clearTimeout(armTimer); armTimer = null; }
+  const b = $('printBtn');
+  if (b) b.textContent = 'Stampa';
+}
+
+function settings() {
+  const n = (id, d) => { const v = Number($(id).value); return Number.isFinite(v) && v > 0 ? v : d; };
+  return { wmm: n('sW', 54), hmm: n('sH', 54), m8: Math.round(n('sM8', 3)), m13: Math.round(n('sM13', 3)),
+           bh: Math.round(n('sBH', 150)), ps: Math.round(n('sPS', 56)), sep: $('sSep').value };
+}
+
+function addRows(k) {
+  for (let i = 0; i < k; i++) {
+    const tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td class="n"></td>' +
+      '<td class="type"><select><option value="8">EAN-8</option><option value="13">EAN-13</option></select></td>' +
+      '<td class="code"><input inputmode="numeric" autocomplete="off" placeholder="codice"></td>' +
+      '<td class="price"><input inputmode="decimal" autocomplete="off" placeholder="0.00"></td>' +
+      '<td class="qty"><input inputmode="numeric" autocomplete="off" value="1"></td>' +
+      '<td class="state"></td>' +
+      '<td><button class="clear" title="Svuota riga" tabindex="-1">&#10005;</button></td>';
+    tr.addEventListener('input', refresh);
+    tr.addEventListener('change', refresh);
+    tr.addEventListener('focusin', () => { activeRow = tr; refresh(); });
+    tr.querySelector('.clear').addEventListener('click', () => {
+      tr.querySelector('select').value = '8';
+      const ins = tr.querySelectorAll('input');
+      ins[0].value = ''; ins[1].value = ''; ins[2].value = '1';
+      refresh();
+    });
+    rowsEl.appendChild(tr);
+  }
+  renumber(); refresh();
+}
+
+function renumber() { [...rowsEl.children].forEach((tr, i) => tr.querySelector('.n').textContent = i + 1); }
+
+function readRow(tr) {
+  const type = Number(tr.querySelector('select').value);
+  const [codeEl, priceEl, qtyEl] = tr.querySelectorAll('input');
+  const empty = !codeEl.value.trim() && !priceEl.value.trim() && qtyEl.value.trim() === '1';
+  if (empty) return { tr, empty: true };
+  const c = Core.parseCode(codeEl.value, type);
+  const p = Core.parsePrice(priceEl.value);
+  const q = Core.parseQty(qtyEl.value);
+  const errs = [];
+  if (!c.ok) errs.push(c.msg);
+  if (!p.ok) errs.push(p.msg);
+  if (!q.ok) errs.push(q.msg);
+  return { tr, empty: false, ok: errs.length === 0, errs, type,
+           full: c.full, added: c.added, price: p.text, qty: q.qty,
+           bad: { code: !c.ok, price: !p.ok, qty: !q.ok } };
+}
+
+function refresh() {
+  const s = settings();
+  const data = [...rowsEl.children].map(readRow);
+  let valid = 0, labels = 0, errors = 0;
+  data.forEach(r => {
+    const st = r.tr.querySelector('.state');
+    const [codeEl, priceEl, qtyEl] = r.tr.querySelectorAll('input');
+    r.tr.classList.toggle('active', r.tr === activeRow);
+    codeEl.classList.toggle('bad', !!(r.bad && r.bad.code));
+    priceEl.classList.toggle('bad', !!(r.bad && r.bad.price));
+    qtyEl.classList.toggle('bad', !!(r.bad && r.bad.qty));
+    if (r.empty) { st.textContent = ''; return; }
+    if (r.ok) {
+      valid++; labels += r.qty;
+      st.className = 'state ok';
+      st.textContent = 'OK ' + Core.group(r.full, r.type) + (r.added ? ' (cifra aggiunta)' : '');
+    } else {
+      errors++;
+      st.className = 'state err';
+      st.textContent = r.errs[0];
+    }
+  });
+
+  // anteprima: riga attiva se valida, altrimenti prima riga valida
+  const act = data.find(r => r.tr === activeRow && r.ok) || data.find(r => r.ok);
+  drawPreview(act, s);
+
+  let zpl = '', blockMsg = '';
+  if (valid && !errors) {
+    try { zpl = data.filter(r => r.ok).map(r => Core.zplLabel(r, s)).join('\n'); }
+    catch (e) { blockMsg = e.message; }
+  }
+  $('zplOut').value = zpl;
+  $('download').disabled = !zpl;
+  $('copy').disabled = !zpl;
+  lastLabels = labels;
+  disarm();   // se cambia qualcosa, la conferma di stampa va rifatta
+  $('printBtn').disabled = !zpl || printing;
+  $('summary').textContent = blockMsg ? blockMsg
+    : errors ? errors + (errors === 1 ? ' riga con errori' : ' righe con errori')
+    : valid ? valid + (valid === 1 ? ' riga, ' : ' righe, ') + labels + (labels === 1 ? ' etichetta' : ' etichette')
+    : 'Nessuna riga compilata';
+  $('summary').style.color = (errors || blockMsg) ? 'var(--err)' : '';
+}
+
+function drawPreview(r, s) {
+  const box = $('preview');
+  if (!r) { box.innerHTML = '<p class="muted">Compila una riga valida per vedere l\'anteprima.</p>'; return; }
+  const t = Core.layout(r.type, s);
+  const b = Core.bits(r.full, r.type);
+  let rects = '';
+  let i = 0;
+  while (i < b.length) {
+    if (b[i] === '1') {
+      let j = i; while (j < b.length && b[j] === '1') j++;
+      rects += '<rect x="' + (t.x + i * t.mw) + '" y="' + t.y0 + '" width="' + ((j - i) * t.mw) + '" height="' + t.bh + '"/>';
+      i = j;
+    } else i++;
+  }
+  const price = s.sep === ',' ? r.price.replace('.', ',') : r.price;
+  const px = t.x + t.barW;
+  box.innerHTML =
+    '<svg viewBox="0 0 ' + t.w + ' ' + t.h + '" xmlns="http://www.w3.org/2000/svg">' +
+    '<g fill="#000">' + rects + '</g>' +
+    '<text x="' + (t.x + t.barW / 2) + '" y="' + (t.yDigits + t.ds * 0.8) + '" text-anchor="middle" font-family="monospace" font-size="' + t.ds + '" fill="#000">' + Core.group(r.full, r.type) + '</text>' +
+    '<text x="' + px + '" y="' + (t.yPrice + t.ps * 0.8) + '" text-anchor="end" font-family="Arial, sans-serif" font-weight="bold" font-size="' + t.ps + '" fill="#000">€' + price + '</text>' +
+    '</svg>';
+}
+
+$('add').addEventListener('click', () => addRows(5));
+$('clearAll').addEventListener('click', () => {
+  [...rowsEl.children].forEach(tr => {
+    tr.querySelector('select').value = '8';
+    const ins = tr.querySelectorAll('input'); ins[0].value = ''; ins[1].value = ''; ins[2].value = '1';
+  });
+  refresh();
+});
+$('example').addEventListener('click', () => {
+  const tr = rowsEl.children[0];
+  tr.querySelector('select').value = '8';
+  const ins = tr.querySelectorAll('input'); ins[0].value = '04240228'; ins[1].value = '7.75'; ins[2].value = '1';
+  activeRow = tr; refresh();
+});
+['sW','sH','sM8','sM13','sBH','sPS','sSep'].forEach(id => $(id).addEventListener('input', refresh));
+
+$('download').addEventListener('click', () => {
+  const z = $('zplOut').value; if (!z) return;
+  const d = new Date(), p = n => String(n).padStart(2, '0');
+  const name = 'etichette_' + d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '_' + p(d.getHours()) + p(d.getMinutes()) + '.zpl';
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([z + '\n'], { type: 'text/plain' }));
+  a.download = name; document.body.appendChild(a); a.click(); a.remove();
+});
+$('copy').addEventListener('click', async () => {
+  const z = $('zplOut').value; if (!z) return;
+  try { await navigator.clipboard.writeText(z); $('copied').textContent = 'Copiato'; }
+  catch (e) { const ta = $('zplOut'); ta.select(); document.execCommand && document.execCommand('copy'); $('copied').textContent = 'Copiato'; }
+  setTimeout(() => $('copied').textContent = '', 1800);
+});
+
+/* ---------- Ponte con l'app Android (attivo solo dentro l'app) ---------- */
+function setPrintMsg(text, kind) {
+  const m = $('printMsg');
+  m.textContent = text || '';
+  m.className = 'muted' + (kind ? ' ' + kind : '');
+}
+
+function loadPrinters() {
+  const sel = $('printerSel'), msg = $('printerMsg');
+  sel.innerHTML = '';
+  let info;
+  try { info = JSON.parse(window.AndroidPrinter.listPrinters()); }
+  catch (e) { msg.textContent = 'Ponte Bluetooth non disponibile.'; return; }
+  if (info.error) { msg.textContent = info.error; return; }
+  if (!info.perm) { msg.textContent = 'Permesso Bluetooth non concesso. Tocca Consenti nella finestra di Android, poi Aggiorna elenco.'; return; }
+  if (!info.btOn) { msg.textContent = 'Bluetooth disattivato. Attivalo dal tablet, poi tocca Aggiorna elenco.'; return; }
+  if (!info.printers.length) { msg.textContent = 'Nessuna stampante abbinata. Abbina la stampante dalle impostazioni Bluetooth di Android, poi tocca Aggiorna elenco.'; return; }
+  info.printers.forEach(p => {
+    const o = document.createElement('option');
+    o.value = p.address; o.textContent = p.name + ' (' + p.address + ')';
+    sel.appendChild(o);
+  });
+  const known = info.printers.some(p => p.address === info.selected);
+  if (known) sel.value = info.selected;
+  else window.AndroidPrinter.select(sel.value);
+  msg.textContent = 'Stampante selezionata: ' + sel.options[sel.selectedIndex].textContent;
+}
+
+if (HAS_APP) {
+  document.querySelectorAll('.app-only').forEach(e => { e.hidden = false; });
+  document.querySelectorAll('.web-only').forEach(e => { e.hidden = true; });
+  window.onPermissionResult = loadPrinters;
+  $('refreshPrinters').addEventListener('click', loadPrinters);
+  $('printerSel').addEventListener('change', () => {
+    window.AndroidPrinter.select($('printerSel').value);
+    loadPrinters();
+  });
+  $('printBtn').addEventListener('click', () => {
+    if (printing) return;
+    const z = $('zplOut').value;
+    if (!z) return;
+    if (!$('printerSel').value) { setPrintMsg('Seleziona una stampante.', 'errmsg'); return; }
+    if (!armed) {   // primo tocco: chiede conferma con il numero di etichette
+      armed = true;
+      $('printBtn').textContent = 'Conferma: stampa ' + lastLabels + (lastLabels === 1 ? ' etichetta' : ' etichette');
+      armTimer = setTimeout(disarm, 4000);
+      return;
+    }
+    disarm();
+    printing = true;
+    $('printBtn').disabled = true;
+    setPrintMsg('Invio alla stampante...', '');
+    window.AndroidPrinter.print(z);
+  });
+  window.onPrintResult = (ok, msg) => {
+    printing = false;
+    $('printBtn').disabled = !$('zplOut').value;
+    setPrintMsg(msg, ok ? 'okmsg' : 'errmsg');
+  };
+  loadPrinters();
+}
+
+addRows(12);
+</script>
+</body>
+</html>
