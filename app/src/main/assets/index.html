@@ -102,7 +102,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>Etichette EAN - Zebra ZD230t <small style="font-weight:400;font-size:12px;color:var(--muted)">v3</small></h1>
+  <h1>Etichette EAN - Zebra ZD230t <small style="font-weight:400;font-size:12px;color:var(--muted)">v4</small></h1>
   <p class="sub">Etichetta 54 x 54 mm, 203 dpi. Inserisci le righe, controlla l'anteprima e stampa.</p>
 
   <div class="grid">
@@ -144,16 +144,18 @@
       <div class="panel">
         <h2>Impostazioni</h2>
         <div class="set">
-          <div><label for="sW">Larghezza etichetta (mm)</label><input id="sW" type="number" value="54" min="25" max="104"></div>
-          <div><label for="sH">Altezza etichetta (mm)</label><input id="sH" type="number" value="54" min="25" max="200"></div>
+          <div><label for="sW">Larghezza etichetta (mm)</label><input id="sW" type="number" value="53" min="25" max="104"></div>
+          <div><label for="sH">Altezza etichetta (mm)</label><input id="sH" type="number" value="53" min="25" max="200"></div>
           <div><label for="sM8">Modulo EAN-8 (punti)</label><input id="sM8" type="number" value="3" min="1" max="6"></div>
           <div><label for="sM13">Modulo EAN-13 (punti)</label><input id="sM13" type="number" value="3" min="1" max="6"></div>
           <div><label for="sBH">Altezza barre (punti)</label><input id="sBH" type="number" value="150" min="40" max="300"></div>
           <div><label for="sPS">Corpo prezzo (punti)</label><input id="sPS" type="number" value="56" min="20" max="120"></div>
+          <div><label for="sOX">Sposta a destra (punti, negativo = sinistra)</label><input id="sOX" type="number" value="0" min="-200" max="200"></div>
+          <div><label for="sOY">Sposta in basso (punti, negativo = su)</label><input id="sOY" type="number" value="0" min="-200" max="200"></div>
           <div><label for="sSep">Separatore decimale stampato</label>
             <select id="sSep"><option value=".">punto (7.75)</option><option value=",">virgola (7,75)</option></select></div>
         </div>
-        <p class="note">203 dpi = 8 punti per mm. 54 mm = 432 punti.</p>
+        <p class="note">203 dpi = 8 punti per mm. 53 mm = 424 punti. Per centrare la stampa: 8 punti = 1 mm.</p>
         <details>
           <summary>Mostra il ZPL generato</summary>
           <textarea id="zplOut" readonly spellcheck="false"></textarea>
@@ -237,9 +239,9 @@ const Core = (() => {
     const barW = (type === 8 ? 67 : 95) * mw;
     const ds = 30, gap1 = 14, gap2 = 22, ps = s.ps, bh = s.bh;
     const total = bh + gap1 + ds + gap2 + ps;
-    const y0 = Math.max(0, Math.round((h - total) / 2));
-    const x = Math.round((w - barW) / 2);
-    const priceX = 16, priceW = Math.max(40, x + barW - priceX);   // si allarga a sinistra, resta allineato a destra con le barre
+    const y0 = Math.max(0, Math.round((h - total) / 2) + (s.oy || 0));
+    const x = Math.max(0, Math.round((w - barW) / 2) + (s.ox || 0));
+    const priceX = Math.max(0, 16 + (s.ox || 0)), priceW = Math.max(40, x + barW - priceX);   // si allarga a sinistra, resta allineato a destra con le barre
     return { w, h, mw, barW, bh, ds, ps, x, y0, priceX, priceW,
              yDigits: y0 + bh + gap1, yPrice: y0 + bh + gap1 + ds + gap2,
              fits: barW <= w && total <= h };
@@ -286,7 +288,7 @@ function disarm() {
 
 function settings() {
   const n = (id, d) => { const v = Number($(id).value); return Number.isFinite(v) && v > 0 ? v : d; };
-  return { wmm: n('sW', 54), hmm: n('sH', 54), m8: Math.round(n('sM8', 3)), m13: Math.round(n('sM13', 3)),
+  return { wmm: n('sW', 53), hmm: n('sH', 53), ox: Math.round(Number($('sOX').value) || 0), oy: Math.round(Number($('sOY').value) || 0), m8: Math.round(n('sM8', 3)), m13: Math.round(n('sM13', 3)),
            bh: Math.round(n('sBH', 150)), ps: Math.round(n('sPS', 56)), sep: $('sSep').value };
 }
 
@@ -417,7 +419,7 @@ $('example').addEventListener('click', () => {
   const ins = tr.querySelectorAll('input'); ins[0].value = '04240228'; ins[1].value = '7.75'; ins[2].value = '1';
   activeRow = tr; refresh();
 });
-['sW','sH','sM8','sM13','sBH','sPS','sSep'].forEach(id => $(id).addEventListener('input', refresh));
+['sW','sH','sOX','sOY','sM8','sM13','sBH','sPS','sSep'].forEach(id => $(id).addEventListener('input', refresh));
 
 $('download').addEventListener('click', () => {
   const z = $('zplOut').value; if (!z) return;
