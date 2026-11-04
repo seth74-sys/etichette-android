@@ -6,14 +6,14 @@
 <title>Etichette EAN - Zebra ZD230t</title>
 <style>
   :root {
-    --bg: #f6f6f4; --panel: #ffffff; --ink: #1c1c1a; --muted: #6a6a64;
-    --line: #dcdcd6; --accent: #1f5fbf; --accent-ink: #ffffff;
+    --bg: #eaf1f3; --panel: #ffffff; --ink: #13262c; --muted: #587078;
+    --line: #d2e0e4; --accent: #16839a; --accent-ink: #ffffff; --brand: #16839a; --brand-dark: #0f6477;
     --ok: #1d7a3a; --err: #b3261e; --warn: #8a5a00;
   }
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #151515; --panel: #1f1f1e; --ink: #ececea; --muted: #9a9a94;
-      --line: #34342f; --accent: #6ea0ff; --accent-ink: #0b1220;
+      --bg: #0d181c; --panel: #14252a; --ink: #e8f1f3; --muted: #8fa9b1;
+      --line: #27404a; --accent: #3fb6d1; --accent-ink: #042027; --brand: #16839a; --brand-dark: #0b4a5a;
       --ok: #5fd08a; --err: #ff8a80; --warn: #e6b450;
     }
   }
@@ -36,7 +36,7 @@
   input, select { width: 100%; padding: 7px 8px; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; }
   input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
   input.bad { border-color: var(--err); }
-  td.type { width: 132px; } td.code { width: 34%; } td.price { width: 96px; } td.qty { width: 78px; }
+  td.type { width: 132px; min-width: 104px; } td.code { width: 34%; } td.price { width: 96px; } td.qty { width: 78px; }
   td.state { font-size: 12.5px; min-width: 150px; }
   .ok { color: var(--ok); } .err { color: var(--err); } .muted { color: var(--muted); }
   .clear { background: none; border: none; color: var(--muted); cursor: pointer; padding: 4px 6px; border-radius: 4px; }
@@ -58,6 +58,20 @@
              background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 8px; }
   .stack > * + * { margin-top: 16px; }
   [hidden] { display: none !important; }
+
+  .hero { background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%); color: #fff; }
+  .hero-in { max-width: 1180px; margin: 0 auto; padding: 18px 16px 20px; display: flex; align-items: center; gap: 16px; }
+  .hero img.word { height: 26px; width: auto; display: block; }
+  .hero img.mark { height: 40px; width: auto; margin-left: auto; opacity: .95; }
+  .hero-title { max-width: 1180px; margin: 0 auto; padding: 0 16px 20px; }
+  .hero-title h1 { font-size: 22px; font-weight: 650; letter-spacing: .01em; margin: 0; color: #fff; }
+  .hero-title p { margin: 4px 0 0; color: rgba(255,255,255,.82); font-size: 13.5px; }
+  .panel { box-shadow: 0 1px 2px rgba(10,50,60,.06), 0 6px 18px -10px rgba(10,50,60,.25); border-color: transparent; }
+  .panel h2 { color: var(--brand); font-weight: 700; }
+  @media (prefers-color-scheme: dark) { .panel h2 { color: var(--accent); } }
+  button.btn { font-weight: 550; }
+  button.primary { box-shadow: 0 4px 12px -4px rgba(22,131,154,.7); padding: 11px 24px; }
+  .app-footer { text-align: center; color: var(--muted); font-size: 12px; padding: 4px 0 26px; }
   @media (pointer: coarse) {
     input, select { padding: 11px 10px; font-size: 17px; }
     button.btn { padding: 12px 18px; font-size: 16px; }
@@ -69,11 +83,13 @@
     .grid { display: flex; flex-direction: column; gap: 12px; }
     .stack { display: contents; }
     .stack > * + * { margin-top: 0; }
-    #printerPanel { order: -1; }
+    #printerPanel { order: -1; width: 100%; }
     .stack > .panel:not(#printerPanel) { order: 1; }
   }
   @media (max-width: 700px) {
     .wrap { padding: 12px 10px 32px; }
+    .hero-in { padding: 14px 14px 12px; } .hero img.word { height: 21px; } .hero img.mark { height: 32px; }
+    .hero-title { padding: 0 14px 16px; } .hero-title h1 { font-size: 19px; }
     table, tbody { display: block; }
     thead { display: none; }
     #rows tr { display: grid; grid-template-columns: 24px 1fr 1fr 78px;
@@ -101,9 +117,14 @@
 </style>
 </head>
 <body>
+<header class="hero">
+  <div class="hero-in"><img class="word" src="logo-word.png" alt="Brunisso"><img class="mark" src="logo-mark.png" alt=""></div>
+  <div class="hero-title">
+    <h1>Stampa etichette prezzo</h1>
+    <p>Etichetta 53 x 53 mm, 203 dpi. Inserisci le righe, controlla l'anteprima e stampa.</p>
+  </div>
+</header>
 <div class="wrap">
-  <h1>Etichette EAN - Zebra ZD230t <small style="font-weight:400;font-size:12px;color:var(--muted)">v7</small></h1>
-  <p class="sub">Etichetta 54 x 54 mm, 203 dpi. Inserisci le righe, controlla l'anteprima e stampa.</p>
 
   <div class="grid">
     <div class="panel">
@@ -164,6 +185,7 @@
       </div>
     </div>
   </div>
+  <div class="app-footer">Brunisso &middot; v8</div>
 </div>
 
 <script>

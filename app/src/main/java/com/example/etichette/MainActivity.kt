@@ -43,6 +43,8 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        window.statusBarColor = 0xFF16839A.toInt()
+        window.navigationBarColor = 0xFF0F6477.toInt()
 
         web = WebView(this)
         setContentView(web)

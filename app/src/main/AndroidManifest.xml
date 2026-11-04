@@ -10,6 +10,7 @@
     <application
         android:allowBackup="false"
         android:label="Etichette"
+        android:icon="@mipmap/ic_launcher"
         android:theme="@style/Theme.AppCompat.DayNight.NoActionBar">
         <activity
             android:name=".MainActivity"
