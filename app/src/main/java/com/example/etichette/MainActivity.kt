@@ -127,9 +127,15 @@ class MainActivity : AppCompatActivity() {
                 var ok = false
                 var message = ""
                 try {
+                    if (!hasPermission()) {
+                        runOnUiThread { permLauncher.launch(Manifest.permission.BLUETOOTH_CONNECT) }
+                        throw IllegalStateException("Permesso Bluetooth mancante: consentilo nella finestra di Android e ripremi Stampa")
+                    }
                     val ad = adapter() ?: throw IllegalStateException("Bluetooth non disponibile.")
                     if (!ad.isEnabled) throw IllegalStateException("Bluetooth disattivato.")
-                    ad.cancelDiscovery()
+                    // Nessuna ricerca in corso (non la avviamo mai): cancelDiscovery() richiederebbe
+                    // BLUETOOTH_SCAN su Android 12+ e causava "permesso negato".
+                    try { ad.cancelDiscovery() } catch (e: SecurityException) { /* non necessario */ }
                     val device = ad.getRemoteDevice(address)
                     val socket = device.createRfcommSocketToServiceRecord(sppUuid)
                     try {
@@ -155,7 +161,7 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
                 } catch (e: SecurityException) {
-                    message = "Permesso Bluetooth negato."
+                    message = "Permesso Bluetooth negato (" + (e.message ?: "") + ")."
                 } catch (e: Exception) {
                     message = "Errore: " + (e.message ?: e.javaClass.simpleName) +
                         ". Controlla che la stampante sia accesa, abbinata e non collegata ad altri dispositivi."
