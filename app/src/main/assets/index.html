@@ -102,7 +102,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>Etichette EAN - Zebra ZD230t <small style="font-weight:400;font-size:12px;color:var(--muted)">v4</small></h1>
+  <h1>Etichette EAN - Zebra ZD230t <small style="font-weight:400;font-size:12px;color:var(--muted)">v5</small></h1>
   <p class="sub">Etichetta 54 x 54 mm, 203 dpi. Inserisci le righe, controlla l'anteprima e stampa.</p>
 
   <div class="grid">
@@ -153,7 +153,7 @@
           <div><label for="sOX">Sposta a destra (punti, negativo = sinistra)</label><input id="sOX" type="number" value="0" min="-200" max="200"></div>
           <div><label for="sOY">Sposta in basso (punti, negativo = su)</label><input id="sOY" type="number" value="0" min="-200" max="200"></div>
           <div><label for="sSep">Separatore decimale stampato</label>
-            <select id="sSep"><option value=".">punto (7.75)</option><option value=",">virgola (7,75)</option></select></div>
+            <select id="sSep"><option value=",">virgola (7,75)</option><option value=".">punto (7.75)</option></select></div>
         </div>
         <p class="note">203 dpi = 8 punti per mm. 53 mm = 424 punti. Per centrare la stampa: 8 punti = 1 mm.</p>
         <details>
@@ -238,12 +238,13 @@ const Core = (() => {
     const mw = type === 8 ? s.m8 : s.m13;
     const barW = (type === 8 ? 67 : 95) * mw;
     const ds = 30, gap1 = 14, gap2 = 22, ps = s.ps, bh = s.bh;
-    const total = bh + gap1 + ds + gap2 + ps;
-    const y0 = Math.max(0, Math.round((h - total) / 2) + (s.oy || 0));
+    const total = ps + gap2 + bh + gap1 + ds;
+    const y0 = Math.max(0, Math.round((h - total) / 2) + (s.oy || 0));      // inizio del blocco (prezzo)
     const x = Math.max(0, Math.round((w - barW) / 2) + (s.ox || 0));
-    const priceX = Math.max(0, 16 + (s.ox || 0)), priceW = Math.max(40, x + barW - priceX);   // si allarga a sinistra, resta allineato a destra con le barre
-    return { w, h, mw, barW, bh, ds, ps, x, y0, priceX, priceW,
-             yDigits: y0 + bh + gap1, yPrice: y0 + bh + gap1 + ds + gap2,
+    const priceX = Math.max(0, s.ox || 0), priceW = Math.max(40, w - Math.abs(s.ox || 0));   // prezzo centrato sull'etichetta
+    const yBar = y0 + ps + gap2;
+    return { w, h, mw, barW, bh, ds, ps, x, y0, yBar, priceX, priceW,
+             yDigits: yBar + bh + gap1, yPrice: y0,
              fits: barW <= w && total <= h };
   }
 
@@ -260,9 +261,9 @@ const Core = (() => {
       '^LL' + t.h,
       '^LH0,0',
       '^BY' + t.mw + ',3,' + t.bh,
-      '^FO' + t.x + ',' + t.y0 + cmd + 'N,' + t.bh + ',N,N^FD' + payload + '^FS',
+      '^FO' + t.x + ',' + t.yBar + cmd + 'N,' + t.bh + ',N,N^FD' + payload + '^FS',
       '^FO' + t.x + ',' + t.yDigits + '^A0N,' + t.ds + ',' + t.ds + '^FB' + t.barW + ',1,0,C^FD' + group(r.full, r.type) + '^FS',
-      '^FO' + t.priceX + ',' + t.yPrice + '^A0N,' + t.ps + ',' + t.ps + '^FB' + t.priceW + ',1,0,R^FH\\^FD\\E2\\82\\AC' + price + '^FS',
+      '^FO' + t.priceX + ',' + t.yPrice + '^A0N,' + t.ps + ',' + t.ps + '^FB' + t.priceW + ',1,0,C^FH\\^FD\\E2\\82\\AC' + price + '^FS',
       '^PQ' + r.qty + ',0,1,N',
       '^XZ'
     ].join('\n');
@@ -391,7 +392,7 @@ function drawPreview(r, s) {
   while (i < b.length) {
     if (b[i] === '1') {
       let j = i; while (j < b.length && b[j] === '1') j++;
-      rects += '<rect x="' + (t.x + i * t.mw) + '" y="' + t.y0 + '" width="' + ((j - i) * t.mw) + '" height="' + t.bh + '"/>';
+      rects += '<rect x="' + (t.x + i * t.mw) + '" y="' + t.yBar + '" width="' + ((j - i) * t.mw) + '" height="' + t.bh + '"/>';
       i = j;
     } else i++;
   }
@@ -401,7 +402,7 @@ function drawPreview(r, s) {
     '<svg viewBox="0 0 ' + t.w + ' ' + t.h + '" xmlns="http://www.w3.org/2000/svg">' +
     '<g fill="#000">' + rects + '</g>' +
     '<text x="' + (t.x + t.barW / 2) + '" y="' + (t.yDigits + t.ds * 0.8) + '" text-anchor="middle" font-family="monospace" font-size="' + t.ds + '" fill="#000">' + Core.group(r.full, r.type) + '</text>' +
-    '<text x="' + px + '" y="' + (t.yPrice + t.ps * 0.8) + '" text-anchor="end" font-family="Arial, sans-serif" font-weight="bold" font-size="' + t.ps + '" fill="#000">€' + price + '</text>' +
+    '<text x="' + (t.priceX + t.priceW / 2) + '" y="' + (t.yPrice + t.ps * 0.8) + '" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" font-size="' + t.ps + '" fill="#000">€' + price + '</text>' +
     '</svg>';
 }
 
