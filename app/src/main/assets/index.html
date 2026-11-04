@@ -177,6 +177,14 @@
           <div><label for="sSep">Separatore decimale stampato</label>
             <select id="sSep"><option value=",">virgola (7,75)</option><option value=".">punto (7.75)</option></select></div>
         </div>
+        <div class="app-only" hidden style="margin-top:14px">
+          <label for="sTA" style="display:block;font-size:12px;color:var(--muted);margin-bottom:2px">Avanzamento a fine stampa (punti, da -120 a 120)</label>
+          <div class="bar" style="margin-top:0">
+            <input id="sTA" type="number" value="60" min="-120" max="120" style="width:110px">
+            <button class="btn" id="applyTA">Applica alla stampante</button>
+          </div>
+          <p class="note" id="taMsg">Regola dove si ferma l'etichetta dopo la stampa (posizione di strappo). Il valore viene salvato nella stampante, basta applicarlo una volta.</p>
+        </div>
         <p class="note">203 dpi = 8 punti per mm. 53 mm = 424 punti. Per centrare la stampa: 8 punti = 1 mm.</p>
         <details>
           <summary>Mostra il ZPL generato</summary>
@@ -185,7 +193,7 @@
       </div>
     </div>
   </div>
-  <div class="app-footer">Brunisso &middot; v8</div>
+  <div class="app-footer">Brunisso &middot; v9</div>
 </div>
 
 <script>
@@ -302,7 +310,7 @@ const $ = id => document.getElementById(id);
 const rowsEl = $('rows');
 let activeRow = null;
 const HAS_APP = typeof window.AndroidPrinter !== 'undefined';
-let lastLabels = 0, armed = false, armTimer = null, printing = false;
+let taPending = false, lastLabels = 0, armed = false, armTimer = null, printing = false;
 
 function disarm() {
   armed = false;
@@ -532,8 +540,17 @@ if (HAS_APP) {
     setPrintMsg('Invio alla stampante...', '');
     window.AndroidPrinter.print(z);
   });
+  $('applyTA').addEventListener('click', () => {
+    if (printing) return;
+    const v = Math.max(-120, Math.min(120, Math.round(Number($('sTA').value) || 0)));
+    const s = (v < 0 ? '-' : '+') + String(Math.abs(v)).padStart(3, '0');
+    printing = true; taPending = true;
+    $('taMsg').textContent = 'Invio ' + s + ' alla stampante...';
+    window.AndroidPrinter.print('~TA' + s + '\n^XA^JUS^XZ\n');
+  });
   window.onPrintResult = (ok, msg) => {
     printing = false;
+    if (taPending) { taPending = false; $('taMsg').textContent = ok ? 'Applicato. Stampa un\'etichetta per verificare dove si ferma.' : msg; return; }
     $('printBtn').disabled = !$('zplOut').value;
     setPrintMsg(msg, ok ? 'okmsg' : 'errmsg');
   };
