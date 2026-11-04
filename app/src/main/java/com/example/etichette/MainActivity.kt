@@ -95,7 +95,18 @@ class MainActivity : AppCompatActivity() {
             val list = JSONArray()
             try {
                 if (ad != null && perm && ad.isEnabled) {
-                    for (d in ad.bondedDevices) {
+                    val all = ad.bondedDevices.toList()
+                    // Solo stampanti: classe Bluetooth "imaging/stampante" oppure nome Zebra.
+                    val printers = all.filter { d ->
+                        val major = d.bluetoothClass?.majorDeviceClass
+                        val n = (d.name ?: "").uppercase()
+                        major == android.bluetooth.BluetoothClass.Device.Major.IMAGING ||
+                            n.contains("ZEBRA") || n.startsWith("ZD") || n.startsWith("ZQ") || n.startsWith("ZT")
+                    }
+                    // Se il filtro non trova nulla (nome/classe insoliti) mostra tutto, per non bloccare l'uso.
+                    val shown = if (printers.isEmpty()) all else printers
+                    result.put("filtered", printers.isNotEmpty())
+                    for (d in shown) {
                         val item = JSONObject()
                         item.put("name", d.name ?: d.address)
                         item.put("address", d.address)

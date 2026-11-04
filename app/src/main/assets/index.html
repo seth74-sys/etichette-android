@@ -102,7 +102,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>Etichette EAN - Zebra ZD230t <small style="font-weight:400;font-size:12px;color:var(--muted)">v6</small></h1>
+  <h1>Etichette EAN - Zebra ZD230t <small style="font-weight:400;font-size:12px;color:var(--muted)">v7</small></h1>
   <p class="sub">Etichetta 54 x 54 mm, 203 dpi. Inserisci le righe, controlla l'anteprima e stampa.</p>
 
   <div class="grid">
@@ -446,6 +446,7 @@ function setPrintMsg(text, kind) {
   m.className = 'muted' + (kind ? ' ' + kind : '');
 }
 
+let changingPrinter = false;
 function loadPrinters() {
   const sel = $('printerSel'), msg = $('printerMsg');
   sel.innerHTML = '';
@@ -458,22 +459,38 @@ function loadPrinters() {
   if (!info.printers.length) { msg.textContent = 'Nessuna stampante abbinata. Abbina la stampante dalle impostazioni Bluetooth di Android, poi tocca Aggiorna elenco.'; return; }
   info.printers.forEach(p => {
     const o = document.createElement('option');
-    o.value = p.address; o.textContent = p.name + ' (' + p.address + ')';
+    o.value = p.address; o.textContent = p.name;
     sel.appendChild(o);
   });
-  const known = info.printers.some(p => p.address === info.selected);
-  if (known) sel.value = info.selected;
-  else window.AndroidPrinter.select(sel.value);
-  msg.textContent = 'Stampante selezionata: ' + sel.options[sel.selectedIndex].textContent;
+  const known = info.printers.find(p => p.address === info.selected);
+  if (known) {
+    sel.value = known.address;
+    // Stampante gia' scelta: resta fissa, l'elenco compare solo con "Cambia stampante"
+    sel.hidden = !changingPrinter;
+    $('refreshPrinters').textContent = changingPrinter ? 'Annulla' : 'Cambia stampante';
+    msg.textContent = changingPrinter ? 'Scegli la stampante.' : 'Stampante: ' + known.name;
+  } else {
+    changingPrinter = false;
+    sel.hidden = false;
+    window.AndroidPrinter.select(sel.value);
+    $('refreshPrinters').textContent = 'Aggiorna elenco';
+    msg.textContent = 'Stampante selezionata: ' + sel.options[sel.selectedIndex].textContent;
+  }
 }
 
 if (HAS_APP) {
   document.querySelectorAll('.app-only').forEach(e => { e.hidden = false; });
   document.querySelectorAll('.web-only').forEach(e => { e.hidden = true; });
   window.onPermissionResult = loadPrinters;
-  $('refreshPrinters').addEventListener('click', loadPrinters);
+  $('refreshPrinters').addEventListener('click', () => {
+    const b = $('refreshPrinters').textContent;
+    if (b === 'Cambia stampante') changingPrinter = true;
+    else if (b === 'Annulla') changingPrinter = false;
+    loadPrinters();
+  });
   $('printerSel').addEventListener('change', () => {
     window.AndroidPrinter.select($('printerSel').value);
+    changingPrinter = false;
     loadPrinters();
   });
   $('printBtn').addEventListener('click', () => {
