@@ -102,7 +102,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>Etichette EAN - Zebra ZD230t <small style="font-weight:400;font-size:12px;color:var(--muted)">v5</small></h1>
+  <h1>Etichette EAN - Zebra ZD230t <small style="font-weight:400;font-size:12px;color:var(--muted)">v6</small></h1>
   <p class="sub">Etichetta 54 x 54 mm, 203 dpi. Inserisci le righe, controlla l'anteprima e stampa.</p>
 
   <div class="grid">
@@ -150,6 +150,7 @@
           <div><label for="sM13">Modulo EAN-13 (punti)</label><input id="sM13" type="number" value="3" min="1" max="6"></div>
           <div><label for="sBH">Altezza barre (punti)</label><input id="sBH" type="number" value="150" min="40" max="300"></div>
           <div><label for="sPS">Corpo prezzo (punti)</label><input id="sPS" type="number" value="56" min="20" max="120"></div>
+          <div><label for="sGap">Spazio tra le etichette (mm)</label><input id="sGap" type="number" value="2" min="0" max="10" step="0.5"></div>
           <div><label for="sOX">Sposta a destra (punti, negativo = sinistra)</label><input id="sOX" type="number" value="0" min="-200" max="200"></div>
           <div><label for="sOY">Sposta in basso (punti, negativo = su)</label><input id="sOY" type="number" value="0" min="-200" max="200"></div>
           <div><label for="sSep">Separatore decimale stampato</label>
@@ -243,7 +244,8 @@ const Core = (() => {
     const x = Math.max(0, Math.round((w - barW) / 2) + (s.ox || 0));
     const priceX = Math.max(0, s.ox || 0), priceW = Math.max(40, w - Math.abs(s.ox || 0));   // prezzo centrato sull'etichetta
     const yBar = y0 + ps + gap2;
-    return { w, h, mw, barW, bh, ds, ps, x, y0, yBar, priceX, priceW,
+    const ll = h + Math.round((s.gap == null ? 2 : s.gap) * 8);   // passo reale = altezza + spazio tra le etichette
+    return { w, h, ll, mw, barW, bh, ds, ps, x, y0, yBar, priceX, priceW,
              yDigits: yBar + bh + gap1, yPrice: y0,
              fits: barW <= w && total <= h };
   }
@@ -258,7 +260,7 @@ const Core = (() => {
       '^XA',
       '^CI28',
       '^PW' + t.w,
-      '^LL' + t.h,
+      '^LL' + t.ll,
       '^LH0,0',
       '^BY' + t.mw + ',3,' + t.bh,
       '^FO' + t.x + ',' + t.yBar + cmd + 'N,' + t.bh + ',N,N^FD' + payload + '^FS',
@@ -289,7 +291,7 @@ function disarm() {
 
 function settings() {
   const n = (id, d) => { const v = Number($(id).value); return Number.isFinite(v) && v > 0 ? v : d; };
-  return { wmm: n('sW', 53), hmm: n('sH', 53), ox: Math.round(Number($('sOX').value) || 0), oy: Math.round(Number($('sOY').value) || 0), m8: Math.round(n('sM8', 3)), m13: Math.round(n('sM13', 3)),
+  return { wmm: n('sW', 53), hmm: n('sH', 53), gap: Math.max(0, Number($('sGap').value) || 0), ox: Math.round(Number($('sOX').value) || 0), oy: Math.round(Number($('sOY').value) || 0), m8: Math.round(n('sM8', 3)), m13: Math.round(n('sM13', 3)),
            bh: Math.round(n('sBH', 150)), ps: Math.round(n('sPS', 56)), sep: $('sSep').value };
 }
 
@@ -420,7 +422,7 @@ $('example').addEventListener('click', () => {
   const ins = tr.querySelectorAll('input'); ins[0].value = '04240228'; ins[1].value = '7.75'; ins[2].value = '1';
   activeRow = tr; refresh();
 });
-['sW','sH','sOX','sOY','sM8','sM13','sBH','sPS','sSep'].forEach(id => $(id).addEventListener('input', refresh));
+['sW','sH','sGap','sOX','sOY','sM8','sM13','sBH','sPS','sSep'].forEach(id => $(id).addEventListener('input', refresh));
 
 $('download').addEventListener('click', () => {
   const z = $('zplOut').value; if (!z) return;
