@@ -11,8 +11,8 @@ android {
         applicationId = "com.example.etichette"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 13
+        versionName = "1.13 - © 2026 Stefano Dalan, tutti i diritti riservati"
     }
 
     buildTypes {

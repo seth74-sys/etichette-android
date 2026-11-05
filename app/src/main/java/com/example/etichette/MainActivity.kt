@@ -1,3 +1,6 @@
+/*
+ * © 2026 Stefano Dalan. Applicazione sviluppata con l'ausilio dell'intelligenza artificiale (Claude, Anthropic) da Stefano Dalan. Tutti i diritti riservati.
+ */
 package com.example.etichette
 
 import android.Manifest
