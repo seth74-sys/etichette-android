@@ -83,6 +83,9 @@ class MainActivity : AppCompatActivity() {
         runJs("window.onPrintResult(" + ok + ", " + JSONObject.quote(message) + ")")
     }
 
+    private fun sha(x: String): String =
+        java.security.MessageDigest.getInstance("SHA-256").digest(x.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
+
     inner class Bridge {
 
         /** Elenco delle stampanti Bluetooth gia' abbinate, in formato JSON. */
@@ -121,6 +124,24 @@ class MainActivity : AppCompatActivity() {
             result.put("printers", list)
             result.put("selected", prefs.getString("printer", "") ?: "")
             return result.toString()
+        }
+
+        @JavascriptInterface
+        fun checkPin(pin: String): Boolean = sha(pin) == (prefs.getString("pinHash", null) ?: sha("brunisso"))
+
+        @JavascriptInterface
+        fun changePin(old: String, new: String): Boolean {
+            if (!checkPin(old) || new.length < 4) return false
+            prefs.edit().putString("pinHash", sha(new)).apply()
+            return true
+        }
+
+        @JavascriptInterface
+        fun loadSettings(): String = prefs.getString("settings", "") ?: ""
+
+        @JavascriptInterface
+        fun saveSettings(json: String) {
+            prefs.edit().putString("settings", json).apply()
         }
 
         @JavascriptInterface

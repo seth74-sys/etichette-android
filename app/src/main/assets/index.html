@@ -71,6 +71,12 @@
   @media (prefers-color-scheme: dark) { .panel h2 { color: var(--accent); } }
   button.btn { font-weight: 550; }
   button.primary { box-shadow: 0 4px 12px -4px rgba(22,131,154,.7); padding: 11px 24px; }
+  .linkbtn { background: none; border: 0; color: var(--muted); font: inherit; text-decoration: underline; padding: 6px 4px; cursor: pointer; }
+  .modal { position: fixed; inset: 0; background: rgba(5,25,30,.55); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 50; }
+  .modal-box { background: var(--panel); color: var(--ink); border-radius: 14px; padding: 20px; width: 100%; max-width: 340px; box-shadow: 0 20px 50px -10px rgba(0,0,0,.5); }
+  .modal-box h3 { margin: 0 0 12px; font-size: 16px; color: var(--brand); }
+  .modal-box input { width: 100%; margin-bottom: 10px; }
+  .modal-box .bar { margin-top: 4px; }
   .app-footer { text-align: center; color: var(--muted); font-size: 12px; padding: 4px 0 26px; }
   @media (pointer: coarse) {
     input, select { padding: 11px 10px; font-size: 17px; }
@@ -121,7 +127,7 @@
   <div class="hero-in"><img class="word" src="logo-word.png" alt="Brunisso"><img class="mark" src="logo-mark.png" alt=""></div>
   <div class="hero-title">
     <h1>Stampa etichette prezzo</h1>
-    <p>Etichetta 53 x 53 mm, 203 dpi. Inserisci le righe, controlla l'anteprima e stampa.</p>
+    <p>Inserisci le righe, controlla l'anteprima e stampa.</p>
   </div>
 </header>
 <div class="wrap">
@@ -162,7 +168,7 @@
         <p class="note">Anteprima indicativa. Font e simbolo € reali li decide la stampante.</p>
       </div>
 
-      <div class="panel">
+      <div class="panel" id="settingsPanel" hidden>
         <h2>Impostazioni</h2>
         <div class="set">
           <div><label for="sW">Larghezza etichetta (mm)</label><input id="sW" type="number" value="53" min="25" max="104"></div>
@@ -186,6 +192,11 @@
           <p class="note" id="taMsg">Regola dove si ferma l'etichetta dopo la stampa (posizione di strappo). Il valore viene salvato nella stampante, basta applicarlo una volta.</p>
         </div>
         <p class="note">203 dpi = 8 punti per mm. 53 mm = 424 punti. Per centrare la stampa: 8 punti = 1 mm.</p>
+        <div class="bar">
+          <button class="btn" id="changePin">Cambia password</button>
+          <button class="btn primary" id="closeSettings">Chiudi impostazioni</button>
+          <span class="muted" id="pinMsg"></span>
+        </div>
         <details>
           <summary>Mostra il ZPL generato</summary>
           <textarea id="zplOut" readonly spellcheck="false"></textarea>
@@ -193,9 +204,17 @@
       </div>
     </div>
   </div>
-  <div class="app-footer">Brunisso &middot; v9</div>
+  <div class="app-footer"><button class="linkbtn" id="openSettings">Impostazioni</button> &middot; Brunisso &middot; v10</div>
 </div>
 
+<div class="modal" id="pinModal" hidden>
+  <form class="modal-box" id="pinForm" autocomplete="off">
+    <h3 id="pinTitle">Impostazioni protette</h3>
+    <div id="pinFields"></div>
+    <p class="note" id="pinErr" style="color:var(--err);min-height:1.2em;margin:0 0 8px"></p>
+    <div class="bar"><button class="btn primary" type="submit">OK</button><button class="btn" type="button" id="pinCancel">Annulla</button></div>
+  </form>
+</div>
 <script>
 /*CORE-START*/
 const Core = (() => {
@@ -263,21 +282,27 @@ const Core = (() => {
                       : full[0] + ' ' + full.slice(1, 7) + ' ' + full.slice(7);
   }
 
+  const LOGO = { w: 320, h: 100, bpr: 40, hex: '00000000000000000000000000000000000000000000FFE00000000000000000000000000000000000000000007C0000000000003FC00000000000000000FFF0000000000000000000000000000000000000000000FC000000000001FFE00000000000000001FFF0000000000000000000000000000000000000000000F800000000000FFFF00000000000000001FFE0000000000000000000000000000000000000000001F800000000001FE7F00000000000000001FFE0000000000000000000000000000000000000000001F000000000007F83F00000000000000003FFC0000000000000000000000000000000000000000003F00000000001FF03E00000000000000003FFC0000000000000000000000000000000000000000007E00000000003FE03E00000000000000003FFC0000000000000000000000000000000000000000007E0000000000FFC03E00000000000000007FF8000000000000000000000000000000000000000000FC0000000001FF803C00000000000000007FF8000000000000000000000000000000000000000000F80000000003FF00380000000000000000FFF0000000000000000000000000000000000000000001F80000000007FF00300000000000000000FFF0000000000000000000000000000000000000000003F003C3C0000FFE00000000000000000001FFE0000000000000000000000000000000000000000007E00FFFC0001FFC00000000000000000001FFE0000000000000000000000000000000000000000007E01F3F80003FF800000000000000000003FFC000000000000000000000000000000000000000000FC07E3F80007FF000000000000000000003FFC000000000000000000000000000000000000000001F80FC3F0000FFF000000000000000000007FF8000000000000000000000000000000000000000001F81F83F0001FFE000000000000000000007FF8000000000000000000000000000000000000000003F01F03E0003FFC00000000000000000000FFF0000000000000000000000000000000000000000007E03E07E0007FF800000000000000000000FFF0000000000000000000000000000000000000000007E07E07C000FFF000000000000000000001FFE000000000000000000000000000000000000000000FC0FC0FC001FFF000000000000000000003FFC000000000000000000000000000000000000000000F80FC0F8003FFE000000000000000000003FFC000000000000000000000000000000000000000001F81F81F8007FFC000000000000000000007FF8000000000000000000000000000000000000000001F03F81F000FFF800000000000000000000FFF8000000000000000000000000000000000000000003F07F03F000FFF800000000000000000000FFF0000000000000000000000000000000000000000003F0FF07F001FFF000000000000000000001FFE0000000000000000000000000000000000000000007F3BF0FE003FFE000000000000000000003FFE0000000000000000000000000000000000000000007F73F3FE007FFC000000000000000000003FFC0000000000000000000000000007800000000000007FC3FF7F00FFFC008000000000000000007FFC00000FE07FE0010180000000007FF0FFF0000000007F83FC7FFFFFFFFFF03FFF80003C00FC00FFF800007FF8FFF003FFC000000001FFF9FFF0000000003F01F87FFFFFFFFFF83FFF80007FFFFC00FFF00001FFFCFFF007FFC00FC00007FFFFFFE0000000001C00E01FFFFFFFFFF81FFF8000FFFFF801FFE00007FF7FFFE007FFC07FE0001FFC3FFFE0000000000000000007FFE0FFF807FF8000FFFFF803FFE0001FFC1FFFE007FFC3FFF0003FF01FFFC0000000000000000007FFC07FF807FF8001FFFFF003FFC0003FF80FFFC007FF8FFFF8007FE01FFF8000000000000000000FFFC07FF807FF8001FFFFE007FF80007FF00FFFC00FFFBFFFF800FFC01FFF8000000000000000001FFF80FFF007FF0003FFFFC00FFF8000FFE00FFF800FFFFE7FF801FF801FFF0000000000000000001FFF00FFF007FF0007FFFF800FFF0001FFC00FFF001FFFF87FF803FF001FFF0000000000000000003FFF00FFF00FFF000FFFFF001FFE0003FF801FFF001FFFE07FF807FF003FFE0000000000000000003FFE01FFE00FFF000FFFFF003FFE0007FF001FFE003FFF80FFF00FFE003FFC0000000000000000007FFC01FFE00FFE001FFFFE003FFC000FFF001FFE003FFF00FFF01FFC007FFC000000000000000000FFFC03FFC01FFE003F01FC007FF8001FFE003FFC007FFC01FFF03FF8007FF8000000000000000000FFF803FFC01FFE007C03F800FFF0001FFC003FFC007FF803FFE07FF800FFF8000000000000000001FFF007FFC03FFC007807F000FFF0003FFC007FF800FFF003FFC0FFF000FFF0000000000000000003FFF007FF803FFC00F00FE001FFE0007FF8007FF801FFF007FFC0FFE001FFF0000000000000000003FFE00FFF807FF801E01FC003FFC000FFF000FFF001FFE007FF81FFE001FFE0000000000000000007FFC00FFF007FF801C03F8003FFC000FFF000FFF003FFE00FFF03FFC001FFE000000000000000000FFFC01FFF00FFF003807F0007FF8001FFE001FFE007FFC00FFF03FFC003FFC000000000000000000FFF801FFE00FFF00780FF000FFF0003FFE001FFE007FFC01FFE07FF8003FF8000000000000000001FFF003FFC01FFE00F01FE000FFF0007FFC003FFC00FFF803FFC0FFF0007FF8000000000000000001FFF003FFC01FFE00E03FC001FFE0007FF8003FFC01FFF003FFC0FFF0007FF8030000000000000003FFE007FF803FFC01C07F8003FFE000FFF8007FF803FFF007FF81FFE000FFF0078000000000000007FFC00FFF807FFC0380FF8003FFC001FFF0007FF807FFE007FF81FFE001FFF00F0000000000000007FFC00FFF007FF80781FF0007FFC003FFF000FFF00FFFE00FFF03FFC001FFE01F000000000000000FFF801FFF00FFF00F01FE000FFF8007FFE000FFF00FFFC01FFF03FFC003FFE03E000000000000001FFF001FFE00FFF01E03FE000FFF800FFFE001FFE01FFF801FFE03FF8003FFE07C000000000000001FFF003FFC01FFE01C07FC001FFF001FFFC001FFE07FFF803FFE07FF8007FFC0F0000000000000003FFE007FFC03FFE03C0FFC003FFF003FFFC003FFE0FFFF003FFC07FF000FFFC1E0000000000000003FFC007FF803FFC0780FF8007FFE007FFF8007FFC1FFFE007FFC0FFF000FFFC3C0000000000000007FFC00FFF807FFC0F01FF8007FFE00FFFF800FFFC3FFFE007FF81FFF001FFF8780000000000000007FF800FFF007FF81E01FF800FFFE01E7FF801FFFC7FFFC00FFF83FFF003FFF8F0000000000000000FFF001FFF00FFF03C03FF801FFFC07C7FF803FFFCFFFFC00FFF07FFF007FFFFE0000000000000001FFF001FFE01FFF07803FF803FFFC0F87FF807FFFFE7FF801FFF0FFFF01FFFFFC0000000000000001FFE003FFE03FFF0F003FF80F7FFC1F07FF80FFFFFCFFF801FFF3EFFF83FFFFF84000000000000003FFE003FFC07FFF1E003FFC1E7FFC7E07FFC3EFFFF8FFF001FFFFCFFFFFDFFFF1F800000000000003FFC003FFC1FFFF3C003FFFFC7FFFFC07FFFFCFFFF1FFF001FFFF8FFFFF9FFFE3E800000000000007FF8003FFC3CFFFF8003FFFF87FFFF007FFFF0FFFE1FFE001FFFF07FFFE1FFFC6B40000000000000FFF8003FFFF8FFFF0003FFFF07FFFE007FFFE0FFFC3FFE001FFFC07FFFC1FFF84E40000000000000FFF0003FFFE0FFFE0003FFFE03FFFC003FFFC0FFF03FFC001FFF807FFF01FFF04E40000000000001FFE0003FFFC07FFC0003FFF803FFF0003FFF00FFE07FFC001FFE003FFE00FFC06BC0000000000001FFC0001FFF007FF00001FFF001FFC0001FFE007F803FF8000FFC001FF800FF003180000000000003FFC0001FFC003FE00000FFC000FF80000FF8003E0000000003E0000FE0003C001F00000000000003FF800007E0000F0000007E00001C0000018000000000000000000000000000000000000000000007FF00000000000000000000000000000000000000000000000000000000000000000000000000000FFE00000000000000000000000000000000000000000000000000000000000000000000000000000FFC00000000000000000000000000000000000000000000000000000000000000000000000000001FF800000000000000000000000000000000000000000000000000000000000000000000000000003FF800000000000000000000000000000000000000000000000000000000000000000000000000003FF000000000000000000000000000000000000000000000000000000000000000000000000000007FE00000000000000000000000000000000000000000000000000000000000000000000000000000FFC00000000000000000000000000000000000000000000000000000000000000000000000000000FF80000000000000000000000000000000000007FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE00000001FF00000000000000000000000000000000000007FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000003FE00000000000000000000000000000000000007FFFFFFFFFF80000000001FFFFFFFFFFF00000003FC00000000000000000000000000000000000007FFFFFFFFFF80000000001FFFFFFFFFFF00000007F800000000000000000000000000000000000007FFFFFFFFFF80000000001FFFFFFFFFFF1F00000FF000000000000000000000000000000000000007FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF3F80001FE000000000000000000000000000000000000007FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFE7FC0001FC000000000000000000000000000000000000000000000000000000000000000000000007FC0003F800000000000000000000000000000000000000000000000000000000000000000000000FFC0007E000000000000000000000000000000000000000000000000000000000000000000000000FF8000FC000000000000000000000000000000000000000000000000000000000000000000000000FF8003F8000000000000000000000000000000000000000000000000000000000000000000000000FFC007E0000000000000000000000000000000000000000000000000000000000000000000000000FFE01FC00000000000000000000000000000000000000000000000000000000000000000000000007FF8FF000000000000000000000000000000000000000000000000000000000000000000000000007FFFFC000000000000000000000000000000000000000000000000000000000000000000000000003FFFF0000000000000000000000000000000000000000000000000000000000000000000000000000FFF000000000000000000000000000000000000000000000000000000000000000000000000000000C00000000000000000000000000000000000000000000000000000000000000000000000000000' };
+  // Definizione del logo da scaricare una volta per lavoro di stampa (memoria RAM della stampante)
+  function logoDef() { return '~DGR:LOGO.GRF,' + (LOGO.h * LOGO.bpr) + ',' + LOGO.bpr + ',' + LOGO.hex; }
+
   // Layout in punti stampante (203 dpi). Usato sia per il ZPL sia per l'anteprima.
   function layout(type, s) {
     const w = Math.round(s.wmm * 8), h = Math.round(s.hmm * 8);
     const mw = type === 8 ? s.m8 : s.m13;
     const barW = (type === 8 ? 67 : 95) * mw;
-    const ds = 30, gap1 = 14, gap2 = 22, ps = s.ps, bh = s.bh;
-    const total = ps + gap2 + bh + gap1 + ds;
-    const y0 = Math.max(0, Math.round((h - total) / 2) + (s.oy || 0));      // inizio del blocco (prezzo)
+    const ds = 30, gap0 = 16, gap1 = 12, gap2 = 18, ps = s.ps, bh = s.bh;
+    const total = LOGO.h + gap0 + bh + gap1 + ds + gap2 + ps;     // logo, barre, cifre, prezzo
+    const y0 = Math.max(0, Math.round((h - total) / 2) + (s.oy || 0));      // inizio del blocco (logo)
     const x = Math.max(0, Math.round((w - barW) / 2) + (s.ox || 0));
     const priceX = Math.max(0, s.ox || 0), priceW = Math.max(40, w - Math.abs(s.ox || 0));   // prezzo centrato sull'etichetta
-    const yBar = y0 + ps + gap2;
+    const yBar = y0 + LOGO.h + gap0;
+    const logoX = Math.max(0, Math.round((w - LOGO.w) / 2) + (s.ox || 0));
     const ll = h + Math.round((s.gap == null ? 2 : s.gap) * 8);   // passo reale = altezza + spazio tra le etichette
-    return { w, h, ll, mw, barW, bh, ds, ps, x, y0, yBar, priceX, priceW,
-             yDigits: yBar + bh + gap1, yPrice: y0,
-             fits: barW <= w && total <= h };
+    const yDigits = yBar + bh + gap1;
+    return { w, h, ll, mw, barW, bh, ds, ps, x, y0, yBar, priceX, priceW, logoX, logoY: y0, logoW: LOGO.w, logoH: LOGO.h,
+             yDigits, yPrice: yDigits + ds + gap2,
+             fits: barW <= w && LOGO.w <= w && total <= h };
   }
 
   function zplLabel(r, s) {
@@ -293,6 +318,7 @@ const Core = (() => {
       '^LL' + t.ll,
       '^LH0,0',
       '^BY' + t.mw + ',3,' + t.bh,
+      '^FO' + t.logoX + ',' + t.logoY + '^XGR:LOGO.GRF,1,1^FS',
       '^FO' + t.x + ',' + t.yBar + cmd + 'N,' + t.bh + ',N,N^FD' + payload + '^FS',
       '^FO' + t.x + ',' + t.yDigits + '^A0N,' + t.ds + ',' + t.ds + '^FB' + t.barW + ',1,0,C^FD' + group(r.full, r.type) + '^FS',
       '^FO' + t.priceX + ',' + t.yPrice + '^A0N,' + t.ps + ',' + t.ps + '^FB' + t.priceW + ',1,0,C^FH\\^FD\\E2\\82\\AC' + price + '^FS',
@@ -301,7 +327,7 @@ const Core = (() => {
     ].join('\n');
   }
 
-  return { check, parseCode, parsePrice, parseQty, bits, group, layout, zplLabel };
+  return { check, parseCode, parsePrice, parseQty, bits, group, layout, zplLabel, logoDef };
 })();
 /*CORE-END*/
 
@@ -398,7 +424,7 @@ function refresh() {
 
   let zpl = '', blockMsg = '';
   if (valid && !errors) {
-    try { zpl = data.filter(r => r.ok).map(r => Core.zplLabel(r, s)).join('\n'); }
+    try { zpl = Core.logoDef() + '\n' + data.filter(r => r.ok).map(r => Core.zplLabel(r, s)).join('\n'); }
     catch (e) { blockMsg = e.message; }
   }
   $('zplOut').value = zpl;
@@ -432,6 +458,7 @@ function drawPreview(r, s) {
   const px = t.x + t.barW;
   box.innerHTML =
     '<svg viewBox="0 0 ' + t.w + ' ' + t.h + '" xmlns="http://www.w3.org/2000/svg">' +
+    '<image href="logo-furlana.png" x="' + t.logoX + '" y="' + t.logoY + '" width="' + t.logoW + '" height="' + t.logoH + '"/>' +
     '<g fill="#000">' + rects + '</g>' +
     '<text x="' + (t.x + t.barW / 2) + '" y="' + (t.yDigits + t.ds * 0.8) + '" text-anchor="middle" font-family="monospace" font-size="' + t.ds + '" fill="#000">' + Core.group(r.full, r.type) + '</text>' +
     '<text x="' + (t.priceX + t.priceW / 2) + '" y="' + (t.yPrice + t.ps * 0.8) + '" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" font-size="' + t.ps + '" fill="#000">€' + price + '</text>' +
@@ -558,6 +585,73 @@ if (HAS_APP) {
 }
 
 addRows(12);
+
+/* ---------- Impostazioni protette da password + salvataggio ---------- */
+const SET_IDS = ['sW','sH','sGap','sOX','sOY','sM8','sM13','sBH','sPS','sSep','sTA'];
+function saveSettingsNow() {
+  const o = {}; SET_IDS.forEach(id => { o[id] = $(id).value; });
+  const j = JSON.stringify(o);
+  try { if (HAS_APP) window.AndroidPrinter.saveSettings(j); else localStorage.setItem('etichette-set', j); } catch (e) {}
+}
+function loadSettingsNow() {
+  let j = '';
+  try { j = HAS_APP ? window.AndroidPrinter.loadSettings() : (localStorage.getItem('etichette-set') || ''); } catch (e) {}
+  if (!j) return;
+  try { const o = JSON.parse(j); SET_IDS.forEach(id => { if (o[id] !== undefined && $(id)) $(id).value = o[id]; }); } catch (e) {}
+}
+const PIN_DEFAULT = 'brunisso';
+function pinCheck(p) {
+  if (HAS_APP) return !!window.AndroidPrinter.checkPin(p);
+  let cur = PIN_DEFAULT; try { cur = localStorage.getItem('etichette-pin') || PIN_DEFAULT; } catch (e) {}
+  return p === cur;
+}
+function pinChange(o, n) {
+  if (HAS_APP) return !!window.AndroidPrinter.changePin(o, n);
+  if (!pinCheck(o)) return false;
+  try { localStorage.setItem('etichette-pin', n); } catch (e) {}
+  return true;
+}
+let pinMode = '', pinFails = 0, pinLockUntil = 0;
+function openPin(mode) {
+  pinMode = mode;
+  $('pinTitle').textContent = mode === 'open' ? 'Impostazioni protette' : 'Cambia password';
+  $('pinFields').innerHTML = mode === 'open'
+    ? '<input type="password" id="pin1" placeholder="Password" autocomplete="off">'
+    : '<input type="password" id="pin1" placeholder="Password attuale" autocomplete="off"><input type="password" id="pin2" placeholder="Nuova password (almeno 4 caratteri)" autocomplete="off"><input type="password" id="pin3" placeholder="Ripeti nuova password" autocomplete="off">';
+  $('pinErr').textContent = '';
+  $('pinModal').hidden = false;
+  setTimeout(() => $('pin1').focus(), 50);
+}
+function closePin() { $('pinModal').hidden = true; $('pinFields').innerHTML = ''; }
+$('openSettings').addEventListener('click', () => openPin('open'));
+$('pinCancel').addEventListener('click', closePin);
+$('closeSettings').addEventListener('click', () => { $('settingsPanel').hidden = true; $('pinMsg').textContent = ''; window.scrollTo(0, 0); });
+$('changePin').addEventListener('click', () => openPin('change'));
+$('pinForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const now = Date.now();
+  if (now < pinLockUntil) { $('pinErr').textContent = 'Troppi tentativi, riprova tra ' + Math.ceil((pinLockUntil - now) / 1000) + ' s'; return; }
+  const p1 = $('pin1').value;
+  if (pinMode === 'open') {
+    if (pinCheck(p1)) {
+      pinFails = 0; closePin();
+      $('settingsPanel').hidden = false;
+      $('settingsPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } else {
+      pinFails++; if (pinFails >= 3) { pinLockUntil = now + 15000; pinFails = 0; }
+      $('pinErr').textContent = 'Password errata'; $('pin1').value = '';
+    }
+  } else {
+    const n = $('pin2').value, n2 = $('pin3').value;
+    if (n.length < 4) { $('pinErr').textContent = 'La nuova password deve avere almeno 4 caratteri'; return; }
+    if (n !== n2) { $('pinErr').textContent = 'Le due password nuove non coincidono'; return; }
+    if (pinChange(p1, n)) { closePin(); $('pinMsg').textContent = 'Password cambiata.'; }
+    else $('pinErr').textContent = 'Password attuale errata';
+  }
+});
+loadSettingsNow();
+$('settingsPanel').addEventListener('input', saveSettingsNow);
+$('settingsPanel').addEventListener('change', saveSettingsNow);
 </script>
 </body>
 </html>
