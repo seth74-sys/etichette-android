@@ -148,6 +148,7 @@
       </table>
       <div class="bar">
         <button class="btn add" id="add" title="Aggiungi una riga">+ Aggiungi riga</button>
+        <button class="btn add" id="remove" title="Rimuovi l'ultima riga" disabled>&minus; Rimuovi riga</button>
         <button class="btn" id="clearAll">Svuota</button>
         <span class="summary" id="summary"></span>
       </div>
@@ -222,7 +223,7 @@
     <img src="az-abacus.png" alt="Abacus Systems" style="height:28px">
     <img src="az-paron.png" alt="Paron" style="height:23px">
   </div>
-  <small><button class="linkbtn" id="openSettings">Impostazioni</button> &middot; Brunisso &middot; v12</small>
+  <small><button class="linkbtn" id="openSettings">Impostazioni</button> &middot; Brunisso &middot; v13</small>
 </footer>
 <div class="modal" id="pinModal" hidden>
   <form class="modal-box" id="pinForm" autocomplete="off">
@@ -393,7 +394,8 @@ function addRows(k) {
   renumber(); refresh();
 }
 
-function renumber() { [...rowsEl.children].forEach((tr, i) => tr.querySelector('.n').textContent = i + 1); }
+function updateRemove() { $('remove').disabled = rowsEl.children.length <= 1; }
+function renumber() { updateRemove(); [...rowsEl.children].forEach((tr, i) => tr.querySelector('.n').textContent = i + 1); }
 
 function readRow(tr) {
   const type = Number(tr.querySelector('select').value);
@@ -488,6 +490,13 @@ $('add').addEventListener('click', () => {
   const tr = rowsEl.lastElementChild;
   tr.scrollIntoView({ behavior: 'smooth', block: 'center' });
   tr.querySelector('input').focus({ preventScroll: true });
+});
+$('remove').addEventListener('click', () => {
+  if (rowsEl.children.length <= 1) return;
+  const last = rowsEl.lastElementChild;
+  if (activeRow === last) activeRow = null;
+  last.remove();
+  renumber(); refresh();
 });
 $('clearAll').addEventListener('click', () => {
   while (rowsEl.children.length > 1) rowsEl.lastElementChild.remove();
