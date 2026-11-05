@@ -154,7 +154,7 @@ class MainActivity : AppCompatActivity() {
         fun print(zpl: String) {
             val address = prefs.getString("printer", "") ?: ""
             if (address.isEmpty()) {
-                reportResult(false, "Nessuna stampante selezionata.")
+                reportResult(false, "Nessuna stampante scelta: aprila da Impostazioni.")
                 return
             }
             Thread {

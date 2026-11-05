@@ -71,6 +71,13 @@
   @media (prefers-color-scheme: dark) { .panel h2 { color: var(--accent); } }
   button.btn { font-weight: 550; }
   button.primary { box-shadow: 0 4px 12px -4px rgba(22,131,154,.7); padding: 11px 24px; }
+  .btn.add { border-style: dashed; color: var(--brand); font-weight: 600; }
+  @media (prefers-color-scheme: dark) { .btn.add { color: var(--accent); } }
+  .site-foot { background: linear-gradient(135deg, var(--brand) 0%, var(--brand-dark) 100%); color: #fff; margin-top: 8px; padding: 22px 16px 18px; text-align: center; }
+  .site-foot .logos { max-width: 760px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 18px 30px; }
+  .site-foot .logos img { width: auto; display: block; opacity: .95; }
+  .site-foot small { display: block; margin-top: 18px; font-size: 12px; color: rgba(255,255,255,.75); }
+  .site-foot .linkbtn { color: rgba(255,255,255,.85); }
   .linkbtn { background: none; border: 0; color: var(--muted); font: inherit; text-decoration: underline; padding: 6px 4px; cursor: pointer; }
   .modal { position: fixed; inset: 0; background: rgba(5,25,30,.55); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 50; }
   .modal-box { background: var(--panel); color: var(--ink); border-radius: 14px; padding: 20px; width: 100%; max-width: 340px; box-shadow: 0 20px 50px -10px rgba(0,0,0,.5); }
@@ -140,8 +147,7 @@
         <tbody id="rows"></tbody>
       </table>
       <div class="bar">
-        <button class="btn" id="add">+ 5 righe</button>
-        <button class="btn" id="example">Carica esempio</button>
+        <button class="btn add" id="add" title="Aggiungi una riga">+ Aggiungi riga</button>
         <button class="btn" id="clearAll">Svuota</button>
         <span class="summary" id="summary"></span>
       </div>
@@ -156,12 +162,6 @@
     </div>
 
     <div class="stack">
-      <div class="panel app-only" id="printerPanel" hidden>
-        <h2>Stampante Bluetooth</h2>
-        <select id="printerSel" aria-label="Stampante"></select>
-        <div class="bar"><button class="btn" id="refreshPrinters">Aggiorna elenco</button></div>
-        <p class="note" id="printerMsg"></p>
-      </div>
       <div class="panel">
         <h2>Anteprima (riga selezionata)</h2>
         <div class="preview" id="preview"></div>
@@ -170,6 +170,12 @@
 
       <div class="panel" id="settingsPanel" hidden>
         <h2>Impostazioni</h2>
+        <div class="app-only" id="printerPanel" hidden style="padding-bottom:14px;margin-bottom:14px;border-bottom:1px solid var(--line)">
+        <h2 style="margin-top:0">Stampante Bluetooth</h2>
+        <select id="printerSel" aria-label="Stampante"></select>
+        <div class="bar"><button class="btn" id="refreshPrinters">Aggiorna elenco</button></div>
+        <p class="note" id="printerMsg"></p>
+      </div>
         <div class="set">
           <div><label for="sW">Larghezza etichetta (mm)</label><input id="sW" type="number" value="53" min="25" max="104"></div>
           <div><label for="sH">Altezza etichetta (mm)</label><input id="sH" type="number" value="53" min="25" max="200"></div>
@@ -193,6 +199,7 @@
         </div>
         <p class="note">203 dpi = 8 punti per mm. 53 mm = 424 punti. Per centrare la stampa: 8 punti = 1 mm.</p>
         <div class="bar">
+          <button class="btn" id="example">Carica esempio</button>
           <button class="btn" id="changePin">Cambia password</button>
           <button class="btn primary" id="closeSettings">Chiudi impostazioni</button>
           <span class="muted" id="pinMsg"></span>
@@ -204,9 +211,19 @@
       </div>
     </div>
   </div>
-  <div class="app-footer"><button class="linkbtn" id="openSettings">Impostazioni</button> &middot; Brunisso &middot; v11</div>
+  
 </div>
 
+<footer class="site-foot">
+  <div class="logos">
+    <img src="az-brn.png" alt="BRN" style="height:30px">
+    <img src="az-orma.png" alt="ORMA" style="height:21px">
+    <img src="az-sushmel.png" alt="Sushmel" style="height:17px">
+    <img src="az-abacus.png" alt="Abacus Systems" style="height:28px">
+    <img src="az-paron.png" alt="Paron" style="height:23px">
+  </div>
+  <small><button class="linkbtn" id="openSettings">Impostazioni</button> &middot; Brunisso &middot; v12</small>
+</footer>
 <div class="modal" id="pinModal" hidden>
   <form class="modal-box" id="pinForm" autocomplete="off">
     <h3 id="pinTitle">Impostazioni protette</h3>
@@ -465,8 +482,16 @@ function drawPreview(r, s) {
     '</svg>';
 }
 
-$('add').addEventListener('click', () => addRows(5));
+$('add').addEventListener('click', () => {
+  if (rowsEl.children.length >= 60) return;
+  addRows(1);
+  const tr = rowsEl.lastElementChild;
+  tr.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  tr.querySelector('input').focus({ preventScroll: true });
+});
 $('clearAll').addEventListener('click', () => {
+  while (rowsEl.children.length > 1) rowsEl.lastElementChild.remove();
+  activeRow = null; renumber();
   [...rowsEl.children].forEach(tr => {
     tr.querySelector('select').value = '8';
     const ins = tr.querySelectorAll('input'); ins[0].value = ''; ins[1].value = ''; ins[2].value = '1';
@@ -554,7 +579,7 @@ if (HAS_APP) {
     if (printing) return;
     const z = $('zplOut').value;
     if (!z) return;
-    if (!$('printerSel').value) { setPrintMsg('Seleziona una stampante.', 'errmsg'); return; }
+    if (!$('printerSel').value) { setPrintMsg('Nessuna stampante scelta: aprila da Impostazioni.', 'errmsg'); return; }
     if (!armed) {   // primo tocco: chiede conferma con il numero di etichette
       armed = true;
       $('printBtn').textContent = 'Conferma: stampa ' + lastLabels + (lastLabels === 1 ? ' etichetta' : ' etichette');
@@ -584,7 +609,7 @@ if (HAS_APP) {
   loadPrinters();
 }
 
-addRows(12);
+addRows(1);
 
 /* ---------- Impostazioni protette da password + salvataggio ---------- */
 const SET_IDS = ['sW','sH','sGap','sOX','sOY','sM8','sM13','sBH','sPS','sSep','sTA'];
@@ -620,7 +645,7 @@ function openPin(mode) {
     : '<input type="password" id="pin1" placeholder="Password attuale" autocomplete="off"><input type="password" id="pin2" placeholder="Nuova password (almeno 4 caratteri)" autocomplete="off"><input type="password" id="pin3" placeholder="Ripeti nuova password" autocomplete="off">';
   $('pinErr').textContent = '';
   $('pinModal').hidden = false;
-  setTimeout(() => $('pin1').focus(), 50);
+  setTimeout(() => { const e = $('pin1'); if (e) e.focus(); }, 50);
 }
 function closePin() { $('pinModal').hidden = true; $('pinFields').innerHTML = ''; }
 $('openSettings').addEventListener('click', () => openPin('open'));
